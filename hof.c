@@ -31,6 +31,21 @@ INCLUDES
 
 #include "inc.h"
 
+#ifndef _WIN32
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
+#include <pwd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
+#include <errno.h>
+#include <string.h>
+
 #define chCursor		'_'			/* Cursor ON */
 #define chSpace			' '			/* Cursor OFF*/
 
@@ -46,6 +61,8 @@ void hofAddLetter( BNX_INT16 pos, char a, char *name );
 void hofBlinkCursor( BNX_INT16 pos, char *name );
 void hofResetCursor( BNX_INT16 pos, char *name );
 
+BNX_BOOL hofOldDebianInit();
+BNX_BOOL hofOldDebianSave();
 
 void hofAddLetter( BNX_INT16 pos, char a, char *name )
 {
@@ -85,25 +102,81 @@ void hofResetCursor( BNX_INT16 pos, char *name )
 	}
 }
 
+static const char *hofFileName()
+{
+#ifndef _WIN32
+	static char filename[1024];
+	char *home;
+	struct passwd *passwd;
+	if (!getuid())
+	{
+				fprintf(stderr, "No access to data files for root.\n");
+				return BNX_FALSE;
+	} else {
+		if ((home = getenv("XDG_DATA_HOME")))
+		{ /* See http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html */
+			if (strlen(home) > 1024 - sizeof("/biniax2/hof"))
+			{
+				fprintf(stderr, "$XDG_DATA_HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/biniax2", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else if ((home = getenv("HOME")))
+		{
+			passwd = getpwuid (getuid());
+			home=passwd->pw_dir;
+			if (!home)
+			{
+				fprintf(stderr, "$HOME is not defined.\n");
+				return BNX_FALSE;
+			}
+			if (strlen(home) > 1024 - sizeof("/.local/share/biniax2/hof"))
+			{
+				fprintf(stderr, "$HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/.local", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			strncat(filename, "/share", sizeof(filename)-1);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			strncat(filename, "/biniax2", sizeof(filename)-1);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else
+		{
+			fprintf(stderr, "Neither $XDG_DATA_HOME nor $HOME are defined.\n");
+			return BNX_FALSE;
+		}
+	}
+	strncat(filename, "/hof", sizeof(filename)-1);
+	return filename;
+#else
+	return "./hof.bnx2";
+#endif
+}
 
 BNX_BOOL hofInit()
 {
 	FILE		*file;
 	BNX_INT16	i, j;
-	
+
+	if (hofOldDebianInit() == BNX_TRUE)
+		return BNX_TRUE;
 
 	for ( i = 0; i < cHofEntries; ++i )
 	{
-		strcpy( Hof.arcade[ i ].name, "JORDAN                       " );
+		strcpy( Hof.arcade[ i ].name, "DEBIAN                       " );
 		Hof.arcade[ i ].score = (cHofEntries - i) * cHofInitScore;
 
-		strcpy( Hof.tactic[ i ].name, "JORDAN                       " );
+		strcpy( Hof.tactic[ i ].name, "DEBIAN                       " );
 		Hof.tactic[ i ].score = (cHofEntries - i) * cHofInitScore;
 	}
 
-	if ( sysGetFileLen( sysGetFullFileName( csHOFName ) ) != cHOFFileSize )
+	if ( sysGetFileLen( hofFileName() ) != cHOFFileSize )
 		return BNX_FALSE;
-	file = fopen( sysGetFullFileName( csHOFName ), "rb" );
+	file = fopen( hofFileName(), "rb" );
 	if ( file == (FILE *) NULL )
 		return BNX_FALSE;
 
@@ -137,7 +210,7 @@ BNX_BOOL hofSave()
 	FILE		*file;
 	int			i, j;
 
-	file = fopen( sysGetFullFileName( csHOFName ), "wb" );
+	file = fopen( hofFileName(), "wb" );
 
 	if ( file == (FILE *) NULL )
 		return BNX_FALSE;
@@ -292,4 +365,119 @@ void hofView()
 BNX_HALL *hofGet()
 {
 	return (BNX_HALL *) &Hof;
+}
+
+// DEBIAN SPECIFIC
+
+BNX_BOOL hofOldDebianInit()
+{
+	FILE		*file = NULL;
+	int		i;
+	uint16_t	id, me, ml;
+	const char *filename = NULL;
+	char alt_filename[1024+3];
+
+	file = fopen( (filename = hofFileName()), "rb" );
+
+	if ( file == (FILE *) NULL ) // Bug in previous version, see if data can be reached
+	{
+		char *ptr;
+		strncpy(alt_filename, filename, 1024);
+		ptr = strrchr(alt_filename, '/');
+		if (ptr != NULL)
+		{
+			ptr++;
+			filename = alt_filename;
+			strcpy(ptr, "config");
+			file = fopen( filename, "rb" );
+		}
+	}
+
+	if ( file == (FILE *) NULL )
+	{
+		goto error;
+	}
+
+	errno = 0;
+
+	id = sysFGet16(file);
+	if (id != 0xB2F1)
+		goto error;
+
+	fprintf(stderr, "Loading Hall of Fame data with old format from \"%s\"\n", filename);
+
+	ml = sysFGet16(file);
+	if (ml != cHofNameLen)
+		goto error;
+
+	me = sysFGet16(file);
+	if (me != cHofEntries)
+		goto error;
+
+	for ( i = 0; i < cHofEntries; ++i )
+	{	
+		fread( Hof.arcade[i].name, 1, cHofNameLen, file );
+		Hof.arcade[i].score = sysFGet32(file);
+	}
+
+	for ( i = 0; i < cHofEntries; ++i )
+	{	
+		fread( Hof.tactic[i].name, 1, cHofNameLen, file );
+		Hof.tactic[i].score = sysFGet32(file);
+	}
+
+	id = sysFGet16(file);
+	if (id != 0xB2F0)
+		goto error;
+
+	fclose( file );
+
+	return BNX_TRUE;
+
+error:
+	if (file)
+		fclose( file );
+	return BNX_FALSE;
+}
+
+BNX_BOOL hofOldDebianSave()
+{
+	FILE		*file;
+	int 		i;
+	const char *filename = NULL;
+
+	file = fopen( (filename=hofFileName()), "wb" );
+
+	if ( file == (FILE *) NULL )
+	{
+		if (errno)
+			fprintf(stderr, "Could not save Hall of Fame data with old format in \"%s\": %s\n", filename, strerror(errno));
+		else
+			fprintf(stderr, "Could not save Hall of Fame data with old format in \"%s\"\n", filename);
+		return BNX_FALSE;
+	}
+
+	fprintf(stderr, "Saving Hall of Fame data with old format in \"%s\"\n", filename);
+
+	sysFPut16( 0xB2F1 , file );
+	sysFPut16( cHofNameLen , file );
+	sysFPut16( cHofEntries , file );
+
+	for ( i = 0; i < cHofEntries; ++i )
+	{
+		fwrite( Hof.arcade[i].name, 1, cHofNameLen, file );
+		sysFPut32(Hof.arcade[i].score, file);
+	}
+
+	for ( i = 0; i < cHofEntries; ++i )
+	{
+		fwrite( Hof.tactic[i].name, 1, cHofNameLen, file );
+		sysFPut32(Hof.tactic[i].score, file);
+	}
+
+	sysFPut16( 0xB2F0 , file );
+
+	fclose( file );
+
+	return BNX_TRUE;
 }

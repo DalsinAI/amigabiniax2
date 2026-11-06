@@ -51,6 +51,22 @@ INCLUDES
 #include "lev.h"
 #include "inc.h"
 
+#ifndef _WIN32
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
+#include <pwd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdint.h>
+#endif
+
+#include <errno.h>
+#include <string.h>
+
 /* Global instance of GAME structure */
 BNX_GAME Game;
 
@@ -82,6 +98,9 @@ BNX_BOOL saveGame( BNX_GAME *game );
 BNX_BOOL loadGame( BNX_GAME *game );
 BNX_BOOL loadHiScore( BNX_GAME *game );
 
+BNX_BOOL saveOldDebianGame( BNX_GAME *game );
+BNX_BOOL loadOldDebianGame( BNX_GAME *game );
+
 #define UNREF( A ) (A) = (A)
 /******************************************************************************
 PROGRAM START
@@ -92,7 +111,6 @@ int main( int argc, char *argv[] )
 	BNX_BOOL		bquit		= BNX_FALSE;
 	BNX_INT16		enterState	= cStateMainMenu;
 	BNX_INT16		nmenu		= 0;
-	BNX_INT16		mmenu		= 0;
 
 	UNREF( argc );
 	UNREF( argv );
@@ -100,13 +118,27 @@ int main( int argc, char *argv[] )
 	cfgInit();
 	hofInit();
 	if ( gfxInit() == BNX_FALSE )
+	{
+		fprintf(stderr, "Error in Graphics Initialization\n");
 		return -1;
+	}
 	if ( sysInit() == BNX_FALSE )
+	{
+		fprintf(stderr, "Error in System Initialization\n");
 		return -2;
+	}
 	if ( inpInit() == BNX_FALSE )
+	{
+		fprintf(stderr, "Error in Input Initialization\n");
 		return -3;
+	}
 	if ( sndInit() == BNX_FALSE )
-		return -4;
+	{
+		fprintf(stderr, "Error in Sound Initialization\n");
+		cfgSetSound(BNX_FALSE);
+		cfgSetMusic(BNX_FALSE);
+		/* return -4; */
+	}
 
 	/******************************************************************
 	SHOW INITIAL WELCOME SCREEN
@@ -131,6 +163,10 @@ int main( int argc, char *argv[] )
 				case cOptionContinue:
 					if ( loadGame( &Game ) == BNX_FALSE )
 					{
+						if (errno)
+							fprintf(stderr, "Error loading game data: %s\n", strerror(errno));
+						else
+							fprintf(stderr, "Error loading game data\n");
 						enterState = cStateMainMenu;
 					}
 					else
@@ -281,7 +317,7 @@ void initPlayer( BNX_GAME *game )
 		if ( game->grid[ i ][ nearLine ] != 0 )
 		{
 			game->player[ cPlayer1 ].e = pairLeft( game->grid[ i ][ nearLine ] );
-			game->grid[ game->player[ cPlayer1 ].x ][ game->player[ cPlayer1 ].y ] = cPlayerFlag;
+			game->grid[ (int)game->player[ cPlayer1 ].x ][ (int)game->player[ cPlayer1 ].y ] = cPlayerFlag;
 			break;
 		}
 	}
@@ -293,7 +329,7 @@ void initPlayer( BNX_GAME *game )
 		if ( game->grid[ i ][ nearLine ] != 0 )
 		{
 			game->player[ cPlayer2 ].e = pairRight( game->grid[ i ][ nearLine ] );
-			game->grid[ game->player[ cPlayer2 ].x ][ game->player[ cPlayer2 ].y ] = cPlayerFlag;
+			game->grid[ (int)game->player[ cPlayer2 ].x ][ (int)game->player[ cPlayer2 ].y ] = cPlayerFlag;
 			break;
 		}
 	}
@@ -495,7 +531,7 @@ BNX_BOOL moveUp( BNX_GAME *game, BNX_INT16 pIndex )
 	{
 		if ( takePair( game, p->x, newY, pIndex ) == BNX_TRUE )
 		{
-			game->grid[ p->x ][ p->y ] = 0;
+			game->grid[ (int)p->x ][ (int)p->y ] = 0;
 			p->y = newY;
 			return BNX_TRUE;
 		}
@@ -513,7 +549,7 @@ BNX_BOOL moveDown( BNX_GAME *game, BNX_INT16 pIndex )
 	{
 		if ( takePair( game, p->x, newY, pIndex ) == BNX_TRUE )
 		{
-			game->grid[ p->x ][ p->y ] = 0;
+			game->grid[ (int)p->x ][ (int)p->y ] = 0;
 			p->y = newY;
 			return BNX_TRUE;
 		}
@@ -531,7 +567,7 @@ BNX_BOOL moveLeft( BNX_GAME *game, BNX_INT16 pIndex )
 	{
 		if ( takePair( game, newX, p->y, pIndex ) == BNX_TRUE )
 		{
-			game->grid[ p->x ][ p->y ] = 0;
+			game->grid[ (int)p->x ][ (int)p->y ] = 0;
 			p->x = newX;
 			return BNX_TRUE;
 		}
@@ -549,7 +585,7 @@ BNX_BOOL moveRight( BNX_GAME *game, BNX_INT16 pIndex )
 	{
 		if ( takePair( game, newX, p->y, pIndex ) == BNX_TRUE )
 		{
-			game->grid[ p->x ][ p->y ] = 0;
+			game->grid[ (int)p->x ][ (int)p->y ] = 0;
 			p->x = newX;
 			return BNX_TRUE;
 		}
@@ -607,9 +643,9 @@ BNX_BOOL clearColumn( BNX_GAME *game )
 	{
 		for ( y = 0; y < cGridY; ++y )
 		{
-			if ( game->grid[ game->player[ cPlayer1 ].x ][ y ] != cPlayerFlag )
+			if ( game->grid[ (int)game->player[ cPlayer1 ].x ][ y ] != cPlayerFlag )
 			{
-				game->grid[ game->player[ cPlayer1 ].x ][ y ] = 0;
+				game->grid[ (int)game->player[ cPlayer1 ].x ][ y ] = 0;
 			}
 		}
 	}
@@ -1178,13 +1214,70 @@ void showHelp( BNX_GAME *game )
 GAME AND HISCORE SAVE / RESTORE
 ******************************************************************************/
 
+static const char *saveFileName()
+{
+#ifndef _WIN32
+	static char filename[1024];
+	char *home;
+	struct passwd *passwd;
+	if (!getuid())
+	{
+				fprintf(stderr, "No access to data files for root.\n");
+				return BNX_FALSE;
+	} else {
+		if ((home = getenv("XDG_DATA_HOME")))
+		{ /* See http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html */
+			if (strlen(home) > 1024 - sizeof("/biniax2/hof"))
+			{
+				fprintf(stderr, "$XDG_DATA_HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/biniax2", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else if ((home = getenv("HOME")))
+		{
+			passwd = getpwuid (getuid());
+			home=passwd->pw_dir;
+			if (!home)
+			{
+				fprintf(stderr, "$HOME is not defined.\n");
+				return BNX_FALSE;
+			}
+			if (strlen(home) > 1024 - sizeof("/.local/share/biniax2/autosave"))
+			{
+				fprintf(stderr, "$HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/.local", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			strncat(filename, "/share", sizeof(filename)-1);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			strncat(filename, "/biniax2", sizeof(filename)-1);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else
+		{
+			fprintf(stderr, "Neither $XDG_DATA_HOME nor $HOME are defined.\n");
+			return BNX_FALSE;
+		}
+	}
+	strncat(filename, "/autosave", sizeof(filename)-1);
+	return filename;
+#else
+	return "./autosave.bnx2";
+#endif
+}
+
 BNX_BOOL saveGame( BNX_GAME *game )
 {
 	FILE		*file;
 	BNX_INT32	i;
 	BNX_INT32	j;
 
-	file = fopen( sysGetFullFileName( csSaveGameName ), "wb" );
+	fprintf(stderr, "Saving game data in \"%s\"\n", saveFileName());
+
+	file = fopen( saveFileName(), "wb" );
 
 	if ( file == (FILE *) NULL )
 		return BNX_FALSE;
@@ -1242,9 +1335,14 @@ BNX_BOOL loadGame( BNX_GAME *game )
 	BNX_INT32	i;
 	BNX_INT32	j;
 
-	if ( sysGetFileLen( sysGetFullFileName( csSaveGameName ) ) != cSaveFileSize )
+	if (loadOldDebianGame(game) == BNX_TRUE)
+		return BNX_TRUE;
+
+	fprintf(stderr, "Loading game data from \"%s\"\n", saveFileName());
+
+	if ( sysGetFileLen( saveFileName() ) != cSaveFileSize )
 		return BNX_FALSE;
-	file = fopen( sysGetFullFileName( csSaveGameName ), "rb" );
+	file = fopen( saveFileName(), "rb" );
 	if ( file == (FILE *) NULL )
 		return BNX_FALSE;
 
@@ -1302,3 +1400,124 @@ BNX_BOOL loadHiScore( BNX_GAME *game )
 	return BNX_TRUE;
 }
 
+// DEBIAN SPECIFIC STUFF
+
+BNX_BOOL saveOldDebianGame( BNX_GAME *game )
+{
+	FILE		*file;
+	int		i, j;
+
+	fprintf(stderr, "Saving game data with old format in \"%s\"\n", saveFileName());
+	file = fopen( saveFileName(), "wb" );
+	if ( file == (FILE *) NULL )
+		return BNX_FALSE;
+
+	sysFPut16( 0xB2D1 , file );
+
+	sysFPut32( game->moment      , file );
+	sysFPut16( game->mode        , file );
+	sysFPut16( game->scroll      , file );
+	sysFPut16( game->speed       , file );
+	sysFPut16( game->moves       , file );
+	sysFPut16( game->clears      , file );
+	fputc(    game->ingame      , file );
+	sysFPut32( game->sounds      , file );
+	fputc(    game->message     , file );
+	sysFPut32( game->lines       , file );
+	sysFPut16( game->level       , file );
+	sysFPut16( game->level_count , file );
+
+	sysFPut16( cMaxPlayers , file );
+
+	for (i = 0; i < cMaxPlayers; i++)
+	{
+		fputc( game->player[i].x , file );
+		fputc( game->player[i].y , file );
+		fputc( game->player[i].e , file );
+		sysFPut32( game->score[i] , file );
+		sysFPut32( game->wins[i]  , file );
+		sysFPut32( game->best[i]  , file );
+	}
+
+	sysFPut32( cGridX , file );
+	sysFPut32( cGridY , file );
+
+	for (j = 0; j < cGridY; j++)
+		for (i = 0; i < cGridX; i++)
+			fputc( game->grid[i][j] , file );
+
+	sysFPut16( 0xB2D0 , file );
+
+	fclose( file );
+	return BNX_TRUE;
+}
+
+BNX_BOOL loadOldDebianGame( BNX_GAME *game )
+{
+	FILE		*file = NULL;
+	int		i, j;
+	uint16_t	id, mp;
+	uint32_t	mx, my;
+
+	file = fopen( saveFileName(), "rb" );
+	if ( file == (FILE *) NULL )
+		return BNX_FALSE;
+
+	errno = 0;
+
+	id = sysFGet16(file);
+	if (id != 0xB2D1)
+		goto error;
+
+	fprintf(stderr, "Loading game data with old format from \"%s\"\n", saveFileName());
+
+	game->moment = sysFGet32(file);
+	game->mode = sysFGet16(file);
+	game->scroll = sysFGet16(file);
+	game->speed = sysFGet16(file);
+	game->moves = sysFGet16(file);
+	game->clears = sysFGet16(file);
+	game->ingame = fgetc(file);
+	game->sounds = sysFGet32(file);
+	game->message = fgetc(file);
+	game->lines = sysFGet32(file);
+	game->level = sysFGet16(file);
+	game->level_count = sysFGet16(file);
+
+	mp = sysFGet16(file);
+	if (mp != cMaxPlayers)
+		goto error;
+
+	for (i = 0; i < cMaxPlayers; i++)
+	{
+		game->player[i].x = fgetc(file);
+		game->player[i].y = fgetc(file);
+		game->player[i].e = fgetc(file);
+		game->score[i] = sysFGet32(file);
+		game->wins[i] = sysFGet32(file);
+		game->best[i] = sysFGet32(file);
+	}
+
+	mx = sysFGet32(file);
+	if (mx != cGridX)
+		goto error;
+	my = sysFGet32(file);
+	if (my != cGridY)
+		goto error;
+
+	for (j = 0; j < cGridY; j++)
+		for (i = 0; i < cGridX; i++)
+			game->grid[i][j] = fgetc(file);
+
+	id = sysFGet16(file);
+	if (id != 0xB2D0)
+		goto error;
+
+	fclose( file );
+	return BNX_TRUE;
+
+error:
+	if (file)
+		fclose( file );
+	return BNX_FALSE;
+}

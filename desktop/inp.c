@@ -124,6 +124,8 @@ void inpUpdate()
 					case SDLK_PAGEDOWN : 
 						_Inp.keyPageDown= BNX_TRUE;
 						break;
+					default:
+						break;
 				}
 				if ( event.key.keysym.sym >= SDLK_a && event.key.keysym.sym <= SDLK_z )
 				{

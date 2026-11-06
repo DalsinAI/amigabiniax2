@@ -63,20 +63,20 @@ BNX_BOOL sndInit()
 
 	Mix_VolumeMusic( MIX_MAX_VOLUME >> 1 );
 
-	_Snd.sounds[ 1 ] = Mix_LoadWAV( "data/sound/sfx1.wav" );
-	_Snd.sounds[ 2 ] = Mix_LoadWAV( "data/sound/sfx2.wav" );
-	_Snd.sounds[ 3 ] = Mix_LoadWAV( "data/sound/sfx3.wav" );
-	_Snd.sounds[ 4 ] = Mix_LoadWAV( "data/sound/sfx4.wav" );
-	_Snd.sounds[ 5 ] = Mix_LoadWAV( "data/sound/sfx5.wav" );
+	_Snd.sounds[ 1 ] = Mix_LoadWAV( DATADIR "/sound/sfx1.wav" );
+	_Snd.sounds[ 2 ] = Mix_LoadWAV( DATADIR "/sound/sfx2.wav" );
+	_Snd.sounds[ 3 ] = Mix_LoadWAV( DATADIR "/sound/sfx3.wav" );
+	_Snd.sounds[ 4 ] = Mix_LoadWAV( DATADIR "/sound/sfx4.wav" );
+	_Snd.sounds[ 5 ] = Mix_LoadWAV( DATADIR "/sound/sfx5.wav" );
 
-	_Snd.music[ 0 ] = Mix_LoadMUS( "data/music/biniax_common00.it" );
-	_Snd.music[ 1 ] = Mix_LoadMUS( "data/music/biniax_common01.it" );
-	_Snd.music[ 2 ] = Mix_LoadMUS( "data/music/biniax_common02.it" );
-	_Snd.music[ 3 ] = Mix_LoadMUS( "data/music/biniax_common03.it" );
-	_Snd.music[ 4 ] = Mix_LoadMUS( "data/music/biniax_common04.it" );
-	_Snd.music[ 5 ] = Mix_LoadMUS( "data/music/biniax_common05.it" );
-	_Snd.music[ 6 ] = Mix_LoadMUS( "data/music/biniax_common06.it" );
-	_Snd.music[ 7 ] = Mix_LoadMUS( "data/music/biniax_common07.it" );
+	_Snd.music[ 0 ] = Mix_LoadMUS( DATADIR "/music/biniax_common00.it" );
+	_Snd.music[ 1 ] = Mix_LoadMUS( DATADIR "/music/biniax_common01.it" );
+	_Snd.music[ 2 ] = Mix_LoadMUS( DATADIR "/music/biniax_common02.it" );
+	_Snd.music[ 3 ] = Mix_LoadMUS( DATADIR "/music/biniax_common03.it" );
+	_Snd.music[ 4 ] = Mix_LoadMUS( DATADIR "/music/biniax_common04.it" );
+	_Snd.music[ 5 ] = Mix_LoadMUS( DATADIR "/music/biniax_common05.it" );
+	_Snd.music[ 6 ] = Mix_LoadMUS( DATADIR "/music/biniax_common06.it" );
+	_Snd.music[ 7 ] = Mix_LoadMUS( DATADIR "/music/biniax_common07.it" );
 
 	return loaded;
 }

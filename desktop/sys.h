@@ -65,7 +65,7 @@ void sysUpdate();
 FILE FUNCIONS
 ******************************************************************************/
 
-BNX_UINT32 sysGetFileLen( char *file );
+BNX_UINT32 sysGetFileLen( const char *file );
 
 void sysFPut8( BNX_UINT8 n, FILE *f );
 void sysFPut16( BNX_UINT16 n, FILE *f );

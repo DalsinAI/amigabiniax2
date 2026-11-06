@@ -194,7 +194,7 @@ void gfxRenderGame( BNX_GAME *game )
 		pos.y = cGfxZeroY + game->player[ cPlayer1 ].y * cGfxPairPlusY;
 		if ( pos.y <= cGfxZeroY )
 		{
-			SDL_BlitSurface( _Gfx.cursors[cursor], NULL, _Gfx.screen, &pos );
+			SDL_BlitSurface( _Gfx.cursors[ (int)cursor ], NULL, _Gfx.screen, &pos );
 		}
 
 		/* RENDER MAIN (WHITE) PLAYER */
@@ -202,7 +202,7 @@ void gfxRenderGame( BNX_GAME *game )
 		pos.y = cGfxZeroY + game->player[ cPlayer1 ].y * cGfxPairPlusY;
 		if ( pos.y <= cGfxZeroY )
 		{
-			SDL_BlitSurface( _Gfx.elements[game->player[ cPlayer1 ].e], NULL, _Gfx.screen, &pos );
+			SDL_BlitSurface( _Gfx.elements[ (int)game->player[ cPlayer1 ].e], NULL, _Gfx.screen, &pos );
 			if ( game->score[ cPlayer1 ] != prevScore[ cPlayer1 ] )
 			{
 				gfxNewParticle( pos.x + (cGfxNextPlusX >> 1), pos.y );
@@ -229,7 +229,7 @@ void gfxRenderGame( BNX_GAME *game )
 			pos.y = cGfxZeroY + game->player[ cPlayer2 ].y * cGfxPairPlusY;
 			if ( pos.y <= cGfxZeroY )
 			{
-				SDL_BlitSurface( _Gfx.cursors[cursor], NULL, _Gfx.screen, &pos );
+				SDL_BlitSurface( _Gfx.cursors[ (int)cursor ], NULL, _Gfx.screen, &pos );
 			}
 
 			/* RENDER GREEN PLAYER */
@@ -237,7 +237,7 @@ void gfxRenderGame( BNX_GAME *game )
 			pos.y = cGfxZeroY + game->player[ cPlayer2 ].y * cGfxPairPlusY;
 			if ( pos.y <= cGfxZeroY )
 			{
-				SDL_BlitSurface( _Gfx.elements[game->player[ cPlayer2 ].e], NULL, _Gfx.screen, &pos );
+				SDL_BlitSurface( _Gfx.elements[ (int)game->player[ cPlayer2 ].e], NULL, _Gfx.screen, &pos );
 				if ( game->score[ cPlayer2 ] != prevScore[ cPlayer2 ] )
 				{
 					gfxNewParticle( pos.x + (cGfxNextPlusX >> 1), pos.y );
@@ -809,40 +809,40 @@ BNX_BOOL gfxLoadResources()
 	BNX_BOOL bLoad = BNX_TRUE;
 
 	/* Load GUI related graphics data */
-	bLoad &= gfxLoadImage( "data/graphics/background0.png", &_Gfx.background[ cModeRealtime ]);
-	bLoad &= gfxLoadImage( "data/graphics/background1.png", &_Gfx.background[ cModeTurn ]);
-	bLoad &= gfxLoadImage( "data/graphics/background2.png", &_Gfx.background[ cModeMultiplayer ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/background0.png", &_Gfx.background[ cModeRealtime ]);
+	bLoad &= gfxLoadImage( DATADIR "/graphics/background1.png", &_Gfx.background[ cModeTurn ]);
+	bLoad &= gfxLoadImage( DATADIR "/graphics/background2.png", &_Gfx.background[ cModeMultiplayer ] );
 
-	bLoad &= gfxLoadImage( "data/graphics/window.png", &_Gfx.window );
-	bLoad &= gfxLoadImage( "data/graphics/splash.png", &_Gfx.splash );
-	bLoad &= gfxLoadImage( "data/graphics/logo.png", &_Gfx.logo );
-	bLoad &= gfxLoadImage( "data/graphics/help.png", &_Gfx.help );
-	bLoad &= gfxLoadImage( "data/graphics/font.png", &_Gfx.font );
-	bLoad &= gfxLoadImage( "data/graphics/roadmap.png", &_Gfx.roadmap );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/window.png", &_Gfx.window );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/splash.png", &_Gfx.splash );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/logo.png", &_Gfx.logo );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/help.png", &_Gfx.help );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/font.png", &_Gfx.font );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/roadmap.png", &_Gfx.roadmap );
 
 	// Loading Game Elements
-	bLoad &= gfxLoadImage( "data/graphics/element0.png", &_Gfx.elements[ 0 ] );
-	bLoad &= gfxLoadImage( "data/graphics/element1.png", &_Gfx.elements[ 1 ] );
-	bLoad &= gfxLoadImage( "data/graphics/element2.png", &_Gfx.elements[ 2 ] );
-	bLoad &= gfxLoadImage( "data/graphics/element3.png", &_Gfx.elements[ 3 ] );
-	bLoad &= gfxLoadImage( "data/graphics/elementB.png", &_Gfx.elements[ 4 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/element0.png", &_Gfx.elements[ 0 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/element1.png", &_Gfx.elements[ 1 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/element2.png", &_Gfx.elements[ 2 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/element3.png", &_Gfx.elements[ 3 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/elementB.png", &_Gfx.elements[ 4 ] );
 
-	bLoad &= gfxLoadImage( "data/graphics/movecount.png", &_Gfx.movecount );
-	bLoad &= gfxLoadImage( "data/graphics/keyboard.png", &_Gfx.keyboard );
-	bLoad &= gfxLoadImage( "data/graphics/cursor0.png", &_Gfx.cursors[ 0 ] );
-	bLoad &= gfxLoadImage( "data/graphics/cursor1.png", &_Gfx.cursors[ 1 ] );
-	bLoad &= gfxLoadImage( "data/graphics/marker0.png", &_Gfx.markers[ 0 ] );
-	bLoad &= gfxLoadImage( "data/graphics/marker1.png", &_Gfx.markers[ 1 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/movecount.png", &_Gfx.movecount );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/keyboard.png", &_Gfx.keyboard );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/cursor0.png", &_Gfx.cursors[ 0 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/cursor1.png", &_Gfx.cursors[ 1 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/marker0.png", &_Gfx.markers[ 0 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/marker1.png", &_Gfx.markers[ 1 ] );
 
-	bLoad &= gfxLoadImage( "data/graphics/particle0.png", &_Gfx.part[ 0 ] );
-	bLoad &= gfxLoadImage( "data/graphics/particle1.png", &_Gfx.part[ 1 ] );
-	bLoad &= gfxLoadImage( "data/graphics/particle2.png", &_Gfx.part[ 2 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/particle0.png", &_Gfx.part[ 0 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/particle1.png", &_Gfx.part[ 1 ] );
+	bLoad &= gfxLoadImage( DATADIR "/graphics/particle2.png", &_Gfx.part[ 2 ] );
 
 	// Set alpha
 	SDL_SetAlpha( _Gfx.window, SDL_SRCALPHA | SDL_RLEACCEL, cGfxWinBlending );
 
 	// Load Help Text
-	gfxLoadHelp( "data/text/help.txt" );
+	gfxLoadHelp( DATADIR "/text/help.txt" );
 
 	return bLoad;
 }

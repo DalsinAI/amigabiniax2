@@ -68,5 +68,9 @@ INCLUDES
 #include "symbian/sys.h"
 #endif
 
+#ifndef _WIN32
+#include <stdint.h>
+#include <stdio.h>
+#endif
 
 #endif
