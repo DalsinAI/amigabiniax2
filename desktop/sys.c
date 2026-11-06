@@ -73,7 +73,7 @@ void sysUpdate()
 FILE FUNCTIONS
 ******************************************************************************/
 
-BNX_UINT32 sysGetFileLen( char *file )
+BNX_UINT32 sysGetFileLen( const char *file )
 {
 	BNX_UINT32 len = 0;
 	FILE *f;

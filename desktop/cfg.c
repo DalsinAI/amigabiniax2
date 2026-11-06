@@ -30,6 +30,20 @@ INCLUDES
 
 #include "inc.h"
 
+#if !defined(_WIN32) && !defined(__amigaos__)
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
+#include <pwd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+#ifdef __amigaos__
+#include <unistd.h>	/* access() */
+#endif
 
 /******************************************************************************
 FUNCTIONS
@@ -54,38 +68,101 @@ BNX_BOOL cfgInit()
 	char	buffer[ _Cfg_Buffer ];
 	int		nTemp;
 
+#if !defined(_WIN32) && !defined(__amigaos__)
+	char filename[1024];
+	char *home;
+	struct passwd *passwd;
+	if (!getuid())
+	{
+				fprintf(stderr, "No access to config files for root.\n");
+				return BNX_FALSE;
+	} else {
+		if ((home = getenv("XDG_CONFIG_HOME")))
+		{ /* See http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html */
+			if (strlen(home) > 1024 - sizeof("/biniax2/config"))
+			{
+				fprintf(stderr, "$XDG_CONFIG_HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/biniax2", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else if ((home = getenv("HOME")))
+		{
+			passwd = getpwuid (getuid());
+			home=passwd->pw_dir;
+			if (!home)
+			{
+				fprintf(stderr, "$HOME is not defined.\n");
+				return BNX_FALSE;
+			}
+			if (strlen(home) > 1024 - sizeof("/.config/biniax2/config"))
+			{
+				fprintf(stderr, "$HOME is excessively long.n");
+				return BNX_FALSE;
+			}
+			snprintf(filename, sizeof(filename), "%s/.config", home);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			strncat(filename, "/biniax2", sizeof(filename)-1);
+			mkdir(filename, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
+		else
+		{
+			fprintf(stderr, "Neither $XDG_CONFIG_HOME nor $HOME are defined.\n");
+			return BNX_FALSE;
+		}
+	}
+	strncat(filename, "/config", sizeof(filename)-1);
+#elif defined(__amigaos__)
+	char filename[] = "PROGDIR:config.bnx2";	/* in the drawer */
+#else
+	char filename[] = "./config.bnx2";
+#endif
+
 	_Cfg.sound = BNX_TRUE;
 	_Cfg.music = BNX_TRUE;
 	_Cfg.fullscreen = BNX_FALSE;
 	_Cfg.touch = BNX_FALSE;
 
-	f = fopen( sysGetFullFileName( csConfigName ), "rt" );
-	if ( f == 0 )
-	{
-		return BNX_FALSE;
-	}
+if( access( filename, F_OK ) != -1 ) {
+	f = fopen( filename, "r" );
+		if ( f == NULL )
+		{
+			fprintf( stderr,"Configuration file \"%s\" not found\n", filename );
+			return BNX_FALSE;
+		}
+		else {
+			fgets( buffer, _Cfg_Buffer, f );
+			sscanf( buffer, "SOUND=%d", &nTemp );
+			_Cfg.sound = (BNX_BOOL) nTemp;
 
-	fgets( buffer, _Cfg_Buffer, f );
-	sscanf( buffer, "SOUND=%d", &nTemp );
-	_Cfg.sound = (BNX_BOOL) nTemp;
+			fgets( buffer, _Cfg_Buffer, f );
+			sscanf( buffer, "MUSIC=%d", &nTemp );
+			_Cfg.music = (BNX_BOOL) nTemp;
 
-	fgets( buffer, _Cfg_Buffer, f );
-	sscanf( buffer, "MUSIC=%d", &nTemp );
-	_Cfg.music = (BNX_BOOL) nTemp;
+			fgets( buffer, _Cfg_Buffer, f );
+			sscanf( buffer, "FULLSCREEN=%d", &nTemp );
+			_Cfg.fullscreen = (BNX_BOOL) nTemp;
 
-	fgets( buffer, _Cfg_Buffer, f );
-	sscanf( buffer, "FULLSCREEN=%d", &nTemp );
-	_Cfg.fullscreen = (BNX_BOOL) nTemp;
+			fgets( buffer, _Cfg_Buffer, f );
+			sscanf( buffer, "TOUCH=%d", &nTemp );
+			_Cfg.touch = (BNX_BOOL) nTemp;
+			fclose( f );
 
-	fgets( buffer, _Cfg_Buffer, f );
-	sscanf( buffer, "TOUCH=%d", &nTemp );
-	_Cfg.touch = (BNX_BOOL) nTemp;
-
-	fclose( f );
-
+			fprintf( stderr, _Cfg.sound ? "Sound On\n" : "Sound Off\n" );
+			fprintf( stderr, _Cfg.music ? "Music On\n" : "Music Off\n" );
+			fprintf( stderr, _Cfg.fullscreen ? "Fullscreen On\n" : "Fullscreen Off\n" );
+			return BNX_TRUE;
+		}
+} else {
+	f = fopen( filename, "w" );
+	fputs("SOUND=1\n", f);
+	fputs("MUSIC=1\n", f);
+	fputs("FULLSCREEN=0", f);
+	fclose(f);
 	return BNX_TRUE;
 }
-
+}
 BNX_BOOL cfgGetSound()
 {
 	return _Cfg.sound;
