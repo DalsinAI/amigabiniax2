@@ -30,7 +30,7 @@ INCLUDES
 
 #include "inc.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,6 +40,9 @@ INCLUDES
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#endif
+#ifdef __amigaos__
+#include <unistd.h>	/* access() */
 #endif
 
 /******************************************************************************
@@ -65,7 +68,7 @@ BNX_BOOL cfgInit()
 	char	buffer[ _Cfg_Buffer ];
 	int		nTemp;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 	char filename[1024];
 	char *home;
 	struct passwd *passwd;
@@ -110,6 +113,8 @@ BNX_BOOL cfgInit()
 		}
 	}
 	strncat(filename, "/config", sizeof(filename)-1);
+#elif defined(__amigaos__)
+	char filename[] = "PROGDIR:config.bnx2";	/* in the drawer */
 #else
 	char filename[] = "./config.bnx2";
 #endif

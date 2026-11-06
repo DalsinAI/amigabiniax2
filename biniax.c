@@ -51,7 +51,7 @@ INCLUDES
 #include "lev.h"
 #include "inc.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -1216,7 +1216,7 @@ GAME AND HISCORE SAVE / RESTORE
 
 static const char *saveFileName()
 {
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 	static char filename[1024];
 	char *home;
 	struct passwd *passwd;
@@ -1264,6 +1264,8 @@ static const char *saveFileName()
 	}
 	strncat(filename, "/autosave", sizeof(filename)-1);
 	return filename;
+#elif defined(__amigaos__)
+	return "PROGDIR:autosave.bnx2";	/* in the drawer */
 #else
 	return "./autosave.bnx2";
 #endif

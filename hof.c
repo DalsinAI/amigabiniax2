@@ -31,7 +31,7 @@ INCLUDES
 
 #include "inc.h"
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -104,7 +104,7 @@ void hofResetCursor( BNX_INT16 pos, char *name )
 
 static const char *hofFileName()
 {
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__amigaos__)
 	static char filename[1024];
 	char *home;
 	struct passwd *passwd;
@@ -152,6 +152,8 @@ static const char *hofFileName()
 	}
 	strncat(filename, "/hof", sizeof(filename)-1);
 	return filename;
+#elif defined(__amigaos__)
+	return "PROGDIR:hof.bnx2";	/* in the drawer */
 #else
 	return "./hof.bnx2";
 #endif
@@ -167,10 +169,18 @@ BNX_BOOL hofInit()
 
 	for ( i = 0; i < cHofEntries; ++i )
 	{
+#ifdef __amigaos__
+		strcpy( Hof.arcade[ i ].name, "JORDAN                       " );	/* upstream's */
+#else
 		strcpy( Hof.arcade[ i ].name, "DEBIAN                       " );
+#endif
 		Hof.arcade[ i ].score = (cHofEntries - i) * cHofInitScore;
 
+#ifdef __amigaos__
+		strcpy( Hof.tactic[ i ].name, "JORDAN                       " );	/* upstream's */
+#else
 		strcpy( Hof.tactic[ i ].name, "DEBIAN                       " );
+#endif
 		Hof.tactic[ i ].score = (cHofEntries - i) * cHofInitScore;
 	}
 
