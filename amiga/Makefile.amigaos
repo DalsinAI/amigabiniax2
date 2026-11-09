@@ -81,7 +81,6 @@ dist: $(BUILD)/$(PROG) $(ICONS) AMIGA_PORT.md
 	cp amiga/icons/Biniax2.info amiga/icons/ReadMe.info $(OUT)/
 	cp amiga/icons/ReadMe.info $(OUT)/COPYING.txt.info
 	cp amiga/icons/ReadMe.info $(OUT)/COPYING-libmikmod.txt.info
-	cp amiga/icons/Folder.info $(OUT)/data.info
 	cp amiga/icons/Biniax2-drawer.info dist/Biniax2.info
 
 -include $(OBJS:.o=.d)
